@@ -404,5 +404,5 @@ class SwiftFeetActivity(activity.Activity):
         self._play_video(self._current_video_idx - 1)
 
     def __menu_item_clicked(self, widget, event, idx):
-        logging.warning("CLICKED")
+        logging.debug("CLICKED")
         self._play_video(idx)
