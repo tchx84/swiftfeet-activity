@@ -40,6 +40,10 @@ from gi.repository import Gio
 from gi.repository import GLib
 from gi.repository import GdkPixbuf
 
+# Needed for window.get_xid(), xvimagesink.set_window_handle(), respectively:
+# https://gist.github.com/JohnDMcMaster/178d2581693bafc067672caa2488dffc
+from gi.repository import GdkX11, GstVideo
+
 from gettext import gettext as _
 
 from sugar3.activity import activity
@@ -75,11 +79,11 @@ class VideoPlayer(Gtk.EventBox):
         self.connect('realize', self.__realize)
 
         # video
-        self._vpipeline = Gst.ElementFactory.make("playbin2", "vplayer")
+        self._vpipeline = Gst.ElementFactory.make("playbin3", "vplayer")
         # audio (instructions)
-        self._apipeline = Gst.ElementFactory.make("playbin2", "aplayer")
+        self._apipeline = Gst.ElementFactory.make("playbin3", "aplayer")
         # music
-        self._mpipeline = Gst.ElementFactory.make("playbin2", "mplayer")
+        self._mpipeline = Gst.ElementFactory.make("playbin3", "mplayer")
 
         bus = self._vpipeline.get_bus()
         bus.enable_sync_message_emission()
@@ -96,12 +100,12 @@ class VideoPlayer(Gtk.EventBox):
         bus.connect('message', self.__on_mmessage)
 
     def __on_sync_message(self, bus, message):
-        if message.structure is None:
+        if message.get_structure() is None:
             return
-        if message.structure.get_name() == 'prepare-xwindow-id':
+        if message.get_structure().get_name() == 'prepare-window-handle':
             message.src.set_property('force-aspect-ratio', True)
             self._sink = message.src
-            self._sink.set_xwindow_id(self._xid)
+            self._sink.set_window_handle(self._xid)
 
     def __on_vmessage(self, bus, message):
         t = message.type
@@ -162,7 +166,7 @@ class VideoPlayer(Gtk.EventBox):
                 self._apipeline.set_property('uri', gfile.get_uri())
                 self._apipeline.set_state(Gst.State.PLAYING)
 
-        self._mpipeline.set_property('uri', None)
+        self._mpipeline.set_property('uri', '')
         if music_name:
             path = os.path.join(activity.get_bundle_path(), "music", music_name + ".ogg")
             gfile = Gio.File.new_for_path(path)
@@ -174,7 +178,7 @@ class VideoPlayer(Gtk.EventBox):
                 # situation.
                 # Then, if the mpipeline state change fails below, we start
                 # the music in the EOS handler for apipeline.
-                self._apipeline.get_state()
+                self._apipeline.get_state(Gst.CLOCK_TIME_NONE)
                 self._mpipeline.set_property('uri', gfile.get_uri())
                 self._mpipeline.set_state(Gst.State.PLAYING)
 
