@@ -335,7 +335,7 @@ class SwiftFeetActivity(activity.Activity):
         # changing videos.
         self._video_description.set_text("\n\n\n")
         size_req = self._video_description.size_request()
-        self._video_description.set_size_request(-1, size_req[1])
+        self._video_description.set_size_request(-1, size_req.height)
 
     def _generate_menu(self):
         for child in self._menu.get_children():
